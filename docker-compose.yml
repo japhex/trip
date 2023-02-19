@@ -1,0 +1,43 @@
+version: "3.8"
+
+services:
+  mongo:
+    image: mongo:latest
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data_container:/data/db
+
+  cache:
+    image: redis/redis-stack-server:latest
+    environment:
+      - REDIS_ARGS=--save 20 1 --loglevel warning --requirepass eYVX7EwVmmxKPCDmwMtyKVge8oLd2t81
+    restart: always
+    ports:
+      - "6379:6379"
+    command: redis-stack-server
+    volumes:
+      - cache:/data
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    restart: on-failure
+    container_name: backend
+    depends_on:
+      - cache
+      - mongo
+    ports:
+      - "4000:4000"
+    environment:
+      REDIS_HOST: cache
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: eYVX7EwVmmxKPCDmwMtyKVge8oLd2t81
+      MONGO_URI: mongodb://mongo:27017/gigstr
+    links:
+      - cache
+
+volumes:
+  cache:
+    driver: local
+  mongodb_data_container:
